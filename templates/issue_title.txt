@@ -1,0 +1,1 @@
+$smell_name$ on line $line_number$ of $filename$
