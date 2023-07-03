@@ -1,26 +1,25 @@
-Hi, I was analyzing the codebase to see how a specified function works and I came across a potential code smell that is reported on the following paper:
-https://dl.acm.org/doi/abs/10.1145/3522664.3528620
+Hello!
 
-The paper describes the code smell as follows:
+I found an AI-Specific Code smell in your project.
+The smell is called: $smell_name$
 
-Smell Name: $smell_name$.
+You can find more information about it in this paper: https://dl.acm.org/doi/abs/10.1145/3522664.3528620.
 
-Description : $smell_description$
+According to the paper, the smell is described as follows:
 
+| **Problem**  | $smell_problem$ |
+| ------------- | :------------- |
+| **Solution**  | **$smell_solution$**  |
+| **Impact** | **$smell_impact$**  |
 
+Example:
+ ```diff
+$smell_example$
+  ```
+You can find the code related to this smell in this link: https://github.com/$github_repo$/blob/$master$$filepath$#L$line_start$-L$line_end$.
 
-https://github.com/$github_repo$/blob/$master$$filepath$#L$line_start$-L$line_end$
+I also found instances of this smell in other files, such as:
 
-I have noticed also similar situations in other files, such as:
+$other_files_list$.
 
-$other_files_list$
-
-I was wondering about the definition of this code smell and I would like to ask you:
-
-    1. Do you think this could potentially be a problem?
-    2. How problematic do you consider this issue to be?
-    3. Do you believe it's feasible to address this issue? If so, how would you suggest we go about fixing it?
-
-Could you help me?
-
-Thank you in advance!
+I hope this information is helpful!

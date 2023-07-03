@@ -1,9 +1,36 @@
 import pandas
 import pandas as pd
-
+import time
+import requests
 from permalink_extractor import get_last_commit_id
-from main import create_github_issue
 
+
+def create_github_issue(repo, title, body, token):
+    url = f"https://api.github.com/repos/{repo}/issues"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    data = {
+        "title": title,
+        "body": body
+    }
+    response = requests.post(url, headers=headers, json=data)
+
+    if response.status_code == 201:
+        print("Issue created successfully.")
+    elif response.status_code == 429:
+        retry_after = int(response.headers.get("Retry-After", 1))
+        print(f"Rate limited. Retrying after {retry_after} seconds.")
+        time.sleep(retry_after)
+        create_github_issue(repo, title, body, token)  # Retry the request
+    elif response.status_code == 403:
+        print(" Secondary Rate limited. Try again later.")
+        retry_after = int(response.headers.get("Retry-After", 60))
+        time.sleep(retry_after)
+        create_github_issue(repo, title, body, token)  # Retry the request
+    else:
+        print("Failed to create issue. Error:", response.text)
 
 def create_message(row,otherfiles):
     smell_table = pd.read_csv("smell_table.csv")
@@ -16,17 +43,19 @@ def create_message(row,otherfiles):
     title = title.replace("$filename$", row['filename'].split("\\")[-1])
     title = title.replace("$line_number$", str(row['line']))
 
-    message = open("templates/issue_body.txt", "r").read()
+    message = open("templates/issue_body_v3.txt", "r").read()
     code_link = get_code_snippet_reference(row)
 
     message = message.replace("$filename$", row['filename'].split("\\")[-1])
     message = message.replace("$filepath$", code_link.replace("\\","/"))
     message = message.replace("$github_repo$", row['github_repo'].replace("\\","/"))
-    message = message.replace("$line_start$", str(row['line']-5))
-    message = message.replace("$line_end$", str(row['line']+5))
+    message = message.replace("$line_start$", str(row['line']-10))
+    message = message.replace("$line_end$", str(row['line']+10))
     message = message.replace("$smell_name$", smell_ref['smell_name'].iloc[0])
-    message = message.replace("$smell_description$", smell_ref['smell_Problem'].iloc[0])
-
+    message = message.replace("$smell_description$", smell_ref['smell_Context'].iloc[0])
+    message = message.replace("$smell_problem$", smell_ref['smell_Problem'].iloc[0])
+    message = message.replace("$smell_solution$", smell_ref['smell_Solution'].iloc[0])
+    message = message.replace("$smell_impact$", smell_ref['smell_Impact'].iloc[0])
     other_file_message = ""
     last_commit_id = get_last_commit_id(row['github_repo'].split("/")[0],row['github_repo'],code_link.replace("\\","/"))
     print("Last commit id:",last_commit_id)
@@ -51,7 +80,7 @@ def get_code_snippet_reference(row):
     return filename
 
 
-def get_repo_smell_report(path):
+def send_issue_report(path):
     repo_report = pandas.read_csv(path)
 
     if repo_report.empty:
@@ -60,7 +89,7 @@ def get_repo_smell_report(path):
     for index,row in repo_report.iterrows():
         other_files = []
 
-        if (index > 0):
+        if index > 0:
             other_files.append(row)
         else: smell_file = row
     # create issue message for the report
@@ -73,13 +102,9 @@ def get_repo_smell_report(path):
     # for debugging
     repo = "gilbertrec/TestRepositoryForCodeSmile2"
     create_github_issue(repo, title, message, access_token)
-    exit()
-    print("Github Repo:", repo)
-    filename = row['filename']
-    repo_path = repo
 
 
 
-get_repo_smell_report("F:\\output_for_bot\\allegroaitrains\\columns_and_datatype_not_explicitly_set.csv")
+send_issue_report("F:\\output_for_bot\\allegroaitrains\\columns_and_datatype_not_explicitly_set.csv")
 
 
