@@ -1,0 +1,33 @@
+Hello! 
+
+I found an AI-Specific Code smell in your project.
+The smell is called: $smell_name$
+
+You can find more information about it in this paper: https://dl.acm.org/doi/abs/10.1145/3522664.3528620.
+
+According to the paper, the smell is described as follows:
+
+| **Problem**  | $smell_problem$ |
+| ------------- | :------------- |
+| **Solution**  | **$smell_solution$**  |
+| **Impact** | **$smell_impact$**  |
+
+Example:
+ ```diff
+### Pandas Column Selection
+import pandas as pd
+df = pd.read_csv('data.csv')
++ df = df[['col1', 'col2', 'col3']]
+
+### Pandas Set DataType
+import pandas as pd
+- df = pd.read_csv('data.csv')
++ df = pd.read_csv('data.csv', dtype={'col1': 'str', 'col2': 'int', 'col3': 'float'})
+  ```
+You can find the code related to this smell in this link: https://github.com/$github_repo$/blob/$master$$filepath$#L$line_start$-L$line_end$. 
+
+I also found instances of this smell in other files, such as:
+
+$other_files_list$.
+
+I hope this information is helpful!

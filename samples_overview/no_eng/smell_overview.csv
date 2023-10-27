@@ -1,0 +1,8 @@
+smell_name,count
+columns_and_datatype_not_explicitly_set,392
+dataframe_conversion_api_misused,14
+gradients_not_cleared_before_backward_propagation,257
+in_place_apis_misused,66
+merge_api_parameter_not_explicitly_set,11
+pytorch_call_method_misused,179
+tensor_array_not_used,2696

@@ -1,0 +1,28 @@
+Hi everyone,
+
+I am CodeSmile!
+A bot that performs automatic static analysis and analyze AI-Specific Code smell on AI projects.
+
+During the analysis, I detected a potential issue - this happened to be one of the code smells described in the following paper:
+
+https://dl.acm.org/doi/abs/10.1145/3522664.3528620
+
+The paper describes the code smell as follows:
+
+Smell Name: $smell_name$.
+
+Description : $smell_description$
+
+Problem : $smell_problem$
+
+Solution : $smell_solution$
+
+Impact : $smell_impact$
+
+https://github.com/$github_repo$/blob/$master$$filepath$#L$line_start$-L$line_end$
+
+I detected other instances of the same smell in other files, like:
+
+$other_files_list$
+
+I hope this helps!
