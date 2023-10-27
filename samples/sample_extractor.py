@@ -15,23 +15,19 @@ def define_samples(path):
     return sample_sizes
 
 
-def get_eligible_projects(path,smell):
-    df = pd.read_csv(os.path.join(path,"smell_per_project.csv"))
+def get_eligible_projects(path, smell):
+    df = pd.read_csv(os.path.join(path, "smell_per_project.csv"))
+
+    # Extract the relevant columns
     df = df[['project_name', smell]]
-    #format project_name in recording table
-    df['project_name'] = df['project_name'].str.replace("$", "\\")
-    #get projects that can be used as sample of the selected smell
+    df['project_name'] = df['project_name'].str.replace('$', '\\\\')
+
+    # Filter eligible projects
     eligible_projects = df[df[smell] > 0]
-    #create new column
-    eligible_projects['smell_name'] = ""
 
+    # Create 'smell_name' column
+    eligible_projects['smell_name'] = smell
     eligible_projects = eligible_projects[['project_name', 'smell_name']]
-    #add smell name to column
-
-    for index,row in eligible_projects.iterrows():
-        row['smell_name'] = smell
-        eligible_projects.loc[index] = row
-    #remove column of smell
 
     return eligible_projects
 
@@ -48,6 +44,32 @@ def get_all_eligible_projects(path):
     for smell in smell_list:
         eligible_projects = pd.concat([eligible_projects, get_eligible_projects(path,smell)])
     return eligible_projects
+
+
+
+def extract_sample(path):
+    eligible_projects = get_all_eligible_projects(path)
+    sample_sizes = define_samples(path)
+    sample_sizes = sample_sizes.sort_values(by=['sample_size'], ascending=True)
+    used_projects = pd.DataFrame(columns=['project_name'])
+    sample_set = pd.DataFrame(columns=['project_name', 'smell_name'])
+    for smell in sample_sizes['smell_name']:
+        smell_projects = eligible_projects[eligible_projects['smell_name'] == smell]
+        #filter smell_projects contained in used_projects
+        smell_projects = smell_projects[smell_projects['project_name'].isin(used_projects) == False]
+        sample_size = sample_sizes[sample_sizes['smell_name'] == smell]['sample_size'].values[0]
+        if len(smell_projects) < sample_size:
+            sample = smell_projects
+        else:
+            sample = smell_projects.sample(n=sample_size)
+        #add projects to used projects
+        used_projects = pd.concat([used_projects, pd.DataFrame(sample['project_name'].unique(), columns=['project_name'])])
+        #save sample
+        sample_set = pd.concat([sample_set, sample])
+
+    sample_set.to_csv(os.path.join(path,"sample.csv"), index=False, mode='a', header=True)
+    return sample
+
 
 def stratify(path):
     sample_sizes = define_samples(path)
@@ -114,10 +136,8 @@ def sample_define(population):
 
 
 def main():
-    path = "C:\\Users\\Gilberto\\Documents\\Github\\IssueSmellTracker\\samples_overview\\eng"
-    stratify(path)
-    el= get_all_eligible_projects(path)
-    el.to_csv(os.path.join(path, "eligible_projects.csv"), index=False, mode='a', header=True)
+    path = "/Users/gilberto/PycharmProjects/IssueSmellTracker/samples_overview/eng"
+    extract_sample(path)
 
 if __name__ == '__main__':
     main()
