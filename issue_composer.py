@@ -123,7 +123,7 @@ def send_issue_report(path):
     # get access token from config file
     access_token = open("config/access_token.txt", "r").read()
     # for debugging
-    #repo = "gilbertrec/TestRepositoryForCodeSmile2"
-    repo = row['github_repo'].replace("\\", "/")
+    repo = "gilbertrec/TestRepositoryForCodeSmile2"
+    #repo = row['github_repo'].replace("\\", "/")
     link = create_github_issue(repo, title, message, access_token)
     return link

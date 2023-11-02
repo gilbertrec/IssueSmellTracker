@@ -7,6 +7,40 @@ import time
 
 from issue_composer import send_issue_report
 
+def update_issue_log(info_row,link,status,log_path):
+    issue_log = pd.read_csv(log_path)
+    issue_log.loc[(issue_log["github_repo"] == info_row["github_repo"]) & (issue_log["filename"] == info_row["filename"]),"status"] = status
+    issue_log.loc[(issue_log["github_repo"] == info_row["github_repo"]) & (issue_log["filename"] == info_row["filename"]),"link"] = link
+    issue_log.to_csv(log_path,index=False)
+    return
+def send_single_issue(info_row,log_path):
+    link = send_issue_report(os.path.join(info_row["github_repo"], info_row["filename"]))
+    if link is not None:
+        add_log(info_row["github_repo"], info_row["filename"], "completed", link)
+        update_issue_log(info_row,link,"completed",log_path)
+    elif link == 422:
+        add_log(info_row["github_repo"], info_row["filename"], "failed", "Repository Restricted Access")
+        update_issue_log(info_row, "Repository Restricted Access", "failed", log_path)
+    else:
+        add_log(info_row["github_repo"], info_row["filename"], "failed", link)
+        update_issue_log(info_row, link, "failed", log_path)
+    return link
+
+
+
+def send_multiple_issues_on_single_projects(issue_log_path,not_spam=False):
+    issue_log = pd.read_csv(issue_log_path,encoding="utf-8")
+    issue_log = issue_log[issue_log["status"] == "not sent"]
+    if not_spam:
+        #for each project, send only one issue
+        issue_subset = issue_log.drop_duplicates(subset=["github_repo"])
+    else:
+        issue_subset = issue_log
+    for index, row in issue_subset.iterrows():
+        print("Processing:", row["github_repo"], "for smell:", row["filename"])
+        link = send_single_issue(row,issue_log_path)
+        time.sleep(5)
+        print("Processed:", row["github_repo"], "for smell:", row["filename"], "link:", link)
 
 def broadcast_issues(smell_name, projects_path):
     for dir in os.listdir(projects_path):
@@ -26,11 +60,11 @@ def broadcast_issues(smell_name, projects_path):
                 print("Processed:", dir, "for smell:", smell_name)
     return
 
-def add_log(project_name, filename, status, link):
+def add_log(github_repo, filename, status, link):
     if not os.path.exists("log/execution_log.csv"):
         create_log_execution_file()
     df = pd.read_csv("log/execution_log.csv")
-    df = pd.concat([df, pd.DataFrame([[project_name, filename, status, link]], columns=df.columns)])
+    df = pd.concat([df, pd.DataFrame([[github_repo, filename, status, link]], columns=df.columns)])
     df.to_csv("log/execution_log.csv", index=False)
     return
 
@@ -39,12 +73,9 @@ def create_log_execution_file():
     if not os.path.exists("log"):
         os.makedirs("./log")
     path = "./log/execution_log.csv"
-    df = pd.DataFrame(columns=["project_name", "filename", "status", "link"])
+    df = pd.DataFrame(columns=["github_repo", "filename", "status", "link"])
     df.to_csv(path, index=False)
     return path
-
-
-
 
 def print_log_status():
     if not os.path.exists("log/execution_log.csv"):
@@ -54,7 +85,7 @@ def print_log_status():
     print("Total execution:", len(df))
     print("Total success:", len(df[df["status"] == "completed"]))
     print("Total failed:", len(df[df["status"] == "failed"]))
-    print("Last project:", df["project_name"].iloc[-1])
+    print("Last project:", df["github_repo"].iloc[-1])
     print("Last filename:", df["filename"].iloc[-1])
     print("Last execution status:", df["status"].iloc[-1])
     return
@@ -66,21 +97,28 @@ def main(args):
     if args.input is None:
         print("Please specify input folders")
         exit(0)
-    # get smell name and projects path
-    if args.smell is None:
-        print("Please specify smell name")
-        exit(0)
-    if args.limit is not None:
-        limit = args.limit
-    else:
-        limit = 0
-    smell_name = args.smell
     projects_path = args.input
-    # broadcast issues
-    if args.multiple:
-        multiple_analysis(smell_name, projects_path,limit)
+    if args.table:
+        send_multiple_issues_on_single_projects(projects_path, not_spam=True)
     else:
-        broadcast_issues(smell_name, projects_path)
+        # get smell name and projects path
+        if args.smell is None:
+            print("Please specify smell name")
+            exit(0)
+        if args.limit is not None:
+            limit = args.limit
+        else:
+            limit = 0
+        smell_name = args.smell
+
+        # broadcast issues
+        if args.table:
+            send_multiple_issues_on_single_projects(projects_path, not_spam=True)
+        else:
+            if args.multiple:
+                multiple_analysis(smell_name, projects_path, limit)
+            else:
+                broadcast_issues(smell_name, projects_path)
 
 def multiple_analysis(smell,path,limit=0):
     count = 0
@@ -105,6 +143,7 @@ if __name__ == '__main__':
     parser.add_argument('--log', help='log file', action='store_true')
     parser.add_argument('--help', help='help', action='store_true')
     parser.add_argument('--multiple', help='broadcast issues of multiple projects', action='store_true')
+    parser.add_argument('--table', help='use csv table to send multiple issues (csv path as input parameter)', action='store_true')
     parser.add_argument('--limit', type=int, help='set a limit of number of issues to send')
     args = parser.parse_args()
     if args.help:
@@ -113,6 +152,7 @@ if __name__ == '__main__':
         print("Options:")
         print("--log : print log status")
         print("--help : print help")
+        print('--table: use csv table to send multiple issues (csv path as input parameter)')
         print("--multiple: broadcast issues of multiple projects")
         print("--limit: set a limit of number of issues to send")
         exit(0)
